@@ -939,6 +939,12 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--quiz", required=True)
     s.add_argument("--out")
     s.set_defaults(fn=cmd_html)
+
+    # Accept --home/--lang after the command too (`tutor.py init --lang english`);
+    # SUPPRESS keeps a missing subcommand flag from clobbering the global one.
+    for sp in sub.choices.values():
+        sp.add_argument("--home", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+        sp.add_argument("--lang", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
     return p
 
 

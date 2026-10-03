@@ -394,7 +394,12 @@ def to_markdown(path) -> tuple[str, str]:
     md = clean_markdown(md)
     letters = len(re.sub(r"\s|<!-- page \d+ -->", "", md))
     if letters < 200:
-        hint = " It looks scanned — OCR it first (e.g. `ocrmypdf in.pdf out.pdf`) and retry." if ext == ".pdf" else ""
+        hints = {
+            ".pdf": " It looks scanned — OCR it first (e.g. `ocrmypdf in.pdf out.pdf`) and retry.",
+            ".epub": " It looks like an image-only EPUB (page scans). Convert it to PDF "
+                     "(calibre: `ebook-convert in.epub out.pdf`), OCR that (`ocrmypdf out.pdf ocr.pdf`), and import the OCR'd PDF.",
+        }
+        hint = hints.get(ext, "")
         raise ConversionError(f"Extracted almost no text from {path.name} ({letters} chars).{hint}")
     return md, method
 
@@ -430,6 +435,8 @@ EXERCISE_RE = re.compile(
     rf"^\s*(?:#+\s*|\*\*|\d+[.)]\s*)?(?:{_EX_WORDS})(?![a-zà-ỹ])|^\s*(?:#+\s*)?ex\.\s*\d",
     re.IGNORECASE,
 )
+# Workbook-style numbered task instructions: "**1 Complete these sentences ...**".
+NUMBERED_TASK_RE = re.compile(r"^\s*(?:#+\s*)?\*\*\s*\d{1,2}\s+[A-Z][a-z]")
 _ANSWERS_RE = re.compile(
     r"answer key|answers|key to (?:the )?exercises|solutions|đáp án|lời giải|lösungen|"
     r"corrigés?|soluciones|soluzioni|respostas|ответы|解答|答案|정답",
@@ -437,7 +444,7 @@ _ANSWERS_RE = re.compile(
 )
 _FRONT_RE = re.compile(
     r"^(?:table of )?contents$|^preface|^foreword|^introduction$|^acknowledg|^copyright|"
-    r"^index$|^bibliography|^about (?:the|this) (?:author|book)|^mục lục|^lời (?:nói đầu|giới thiệu)|"
+    r"^index$|^bibliography|^about (?:the|this) (?:author|\w*book|course)|^mục lục|^lời (?:nói đầu|giới thiệu)|"
     r"^inhalt|^sommaire|^índice|^目次|^目录|^차례",
     re.IGNORECASE,
 )
@@ -465,20 +472,40 @@ def _headings(lines: list[str]) -> list[tuple[int, int, str]]:
     return out
 
 
+def _dedupe(heads: list[tuple[int, int, str]]) -> list[tuple[int, int, str]]:
+    """Drop a heading that repeats the previous same-level title (running page headers)."""
+    out: list[tuple[int, int, str]] = []
+    last: dict[int, str] = {}
+    for h in heads:
+        if last.get(h[1], "").lower() != h[2].lower():
+            out.append(h)
+        last[h[1]] = h[2]
+        for deeper in [lv for lv in last if lv > h[1]]:
+            del last[deeper]
+    return out
+
+
 def _pick_split(lines: list[str]) -> tuple[list[tuple[int, str]], str]:
-    heads = _headings(lines)
-    unit_heads = [h for h in heads if UNIT_RE.match(h[2])]
-    if len(unit_heads) >= 2:
-        levels = sorted({h[1] for h in unit_heads})
-        for level in levels:
-            if sum(1 for h in unit_heads if h[1] == level) >= 2:
-                return [(h[0], h[2]) for h in heads if h[1] == level], f"headings (level {level}, unit names)"
+    heads = _dedupe(_headings(lines))
+    # Unit-named headings ("Unit 3", "Lesson 4") win when they dominate their level
+    # with distinct titles and outnumber any shallower structural level (units are
+    # more numerous than their containers). Sub-parts ("Part 1/2/3") fail one of these.
+    shallower_max = 0
+    for level in sorted({h[1] for h in heads}):
+        at = [h for h in heads if h[1] == level]
+        named = [h for h in at if UNIT_RE.match(h[2])]
+        distinct = {re.sub(r"\W+", " ", h[2].lower()).strip() for h in named}
+        if (len(named) >= 2 and len(distinct) == len(named) and len(named) >= 0.4 * len(at)
+                and len(named) > shallower_max):
+            return [(h[0], h[2]) for h in at], f"headings (level {level}, unit names)"
+        if len(at) >= 3:
+            shallower_max = max(shallower_max, len(at))
     for level in range(1, 7):
         at = [h for h in heads if h[1] == level]
         if 3 <= len(at) <= 400:
             return [(h[0], h[2]) for h in at], f"headings (level {level})"
     pseudo = [(i, _clean_title(line)) for i, line in enumerate(lines)
-              if len(line.strip()) <= 80 and UNIT_RE.match(line)]
+              if len(line.strip()) <= 80 and UNIT_RE.match(_clean_title(line))]
     if len(pseudo) >= 2:
         return pseudo, "unit-name lines"
     step = 200
@@ -497,7 +524,7 @@ def unit_exercises(lines: list[str], start: int, end: int) -> list[dict]:
     """Exercise markers inside a unit; start/end are 1-indexed inclusive."""
     out = []
     for i in range(start - 1, min(end, len(lines))):
-        if EXERCISE_RE.match(lines[i]):
+        if EXERCISE_RE.match(lines[i]) or NUMBERED_TASK_RE.match(lines[i]):
             out.append({"n": len(out) + 1, "line": i + 1, "label": _clean_title(lines[i].lstrip("#").strip())[:80]})
     return out
 
@@ -519,7 +546,8 @@ def index_units(md: str) -> tuple[list[dict], str]:
             "kind": kind,
             "start": start + 1,
             "end": end,
-            "exercises": len(unit_exercises(lines, start + 1, end)),
+            # A lesson with no marked exercise still has one block of practice.
+            "exercises": max(len(unit_exercises(lines, start + 1, end)), 1) if kind == "lesson" else 0,
             "status": "todo" if kind == "lesson" else "skip",
             "exercise_progress": {},
         })

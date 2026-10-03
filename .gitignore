@@ -12,3 +12,6 @@
 # Python
 __pycache__/
 *.pyc
+
+# Local learning material (copyrighted books, never commit)
+books/

@@ -70,6 +70,11 @@ class InitTests(TutorTestCase):
         prof = self.cli("profile", "show")["profile"]
         self.assertEqual((prof["level"], prof["target"], prof["native"]), ("B2", "C1", "vietnamese"))
 
+    def test_lang_flag_after_command(self):
+        out = self.cli("init", "--lang", "german", "--level", "A2")
+        self.assertTrue(out["workspace"].endswith("/german"))
+        self.assertEqual(self.cli("status", "--json", "--lang", "german")["language"], "german")
+
     def test_init_twice_does_not_overwrite(self):
         self.init_english()
         self.cli("profile", "set", "level", "C1")
@@ -370,6 +375,49 @@ class ConvertTests(unittest.TestCase):
         for line in ("### Exercise 2.1", "Bài tập 3", "**Practice**", "Übung 4", "練習問題", "Ex. 5"):
             self.assertTrue(convert.EXERCISE_RE.match(line), line)
         self.assertFalse(convert.EXERCISE_RE.match("Exercisebook notes"))
+
+    def test_workbook_layout_repeated_headers_and_sub_parts(self):
+        # Shape of real IELTS workbooks: topic H1 repeated on every page, "Part 1/2/3"
+        # sub-headings inside units, bold numbered task instructions, answers at the end.
+        md = "\n".join([
+            "# About this workbook", "intro",
+            "# Changes 1", "**1 Complete the table.**", "x", "<!-- page 2 -->",
+            "# Changes 1", "##### **2 Choose the best word.**", "y",
+            "# Condition", "##### Part 1", "a", "##### Part 2", "b", "##### Part 3", "c",
+            "**1 Rewrite these sentences.**",
+            "# Phrasal verbs 1", "**Write a particle after each verb.**", "1. bring ___ up",
+            "# Practice tasks 1: Sample answers", "s",
+            "# Answers", "##### **Page 1 Changes 1**", "1. rose",
+        ])
+        units, strategy = convert.index_units(md)
+        self.assertEqual(strategy, "headings (level 1)")
+        got = [(u["title"], u["kind"], u["exercises"]) for u in units]
+        self.assertEqual(got, [
+            ("About this workbook", "front", 0),
+            ("Changes 1", "lesson", 2),
+            ("Condition", "lesson", 1),
+            ("Phrasal verbs 1", "lesson", 1),
+            ("Practice tasks 1: Sample answers", "answers", 0),
+            ("Answers", "answers", 0),
+        ])
+
+    def test_bold_unit_lines_split_when_no_headings(self):
+        md = "\n".join(["intro"] + [f"**Unit {n}**\nbody {n}\n" for n in range(1, 5)])
+        units, strategy = convert.index_units(md)
+        self.assertEqual(strategy, "unit-name lines")
+        self.assertEqual([u["title"] for u in units if u["kind"] == "lesson"], [f"Unit {n}" for n in range(1, 5)])
+
+    def test_image_only_epub_suggests_ocr(self):
+        path = self.dir / "scans.epub"
+        with zipfile.ZipFile(path, "w") as z:
+            z.writestr("META-INF/container.xml",
+                       '<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles>'
+                       '<rootfile full-path="content.opf"/></rootfiles></container>')
+            z.writestr("content.opf", '<package xmlns="http://www.idpf.org/2007/opf"><manifest>'
+                       '<item id="p1" href="p1.xhtml"/></manifest><spine><itemref idref="p1"/></spine></package>')
+            z.writestr("p1.xhtml", '<html><body><svg><image href="p1.jpg"/></svg></body></html>')
+        with self.assertRaisesRegex(convert.ConversionError, "ocrmypdf"):
+            convert.to_markdown(path)
 
     def test_fixed_chunks_when_no_structure(self):
         units, strategy = convert.index_units("\n".join(f"line {i}" for i in range(450)))
