@@ -1,0 +1,41 @@
+# English vocabulary themes, CEFR-ordered. Authored for lang-tutor.
+# A "theme" is one micro-lesson: 5-8 items taught together with collocations.
+# tags: eng, meetings, writing, discussion, casual, general.
+id,level,topic,summary,example,tags
+v-a2-daily-routine,A2,Daily routine and time,get up / commute / take a break / finish work,I usually take a break around 3.,casual
+v-a2-office-basics,A2,Office and computer basics,log in / save / attach / print / laptop / charger,Can you attach the file?,general;eng
+v-a2-small-talk,A2,Small talk openers,How's it going / How was your weekend / Not bad,How was your weekend? Not bad thanks.,casual;meetings
+v-b1-meeting-basics,B1,Meeting basics,agenda / schedule / reschedule / attend / minutes / follow up,Let's reschedule to Thursday.,meetings
+v-b1-git-workflow,B1,Git and code review verbs,commit / push / merge / rebase / branch off / review,Branch off main and open a PR.,eng
+v-b1-bugs,B1,Talking about bugs,bug / crash / freeze / reproduce / workaround / fix,I can't reproduce it locally.,eng
+v-b1-email-openers,B1,Email openers and closers,I hope you're well / Just a quick note / Best regards / Looking forward to,Just a quick note about tomorrow.,writing
+v-b1-opinions,B1,Giving opinions,In my opinion / I reckon / I feel that / As far as I know,As far as I know it's still in beta.,discussion;casual
+v-b1-time-expressions,B1,Deadlines and time,by / until / ASAP / end of day / next sprint / overdue,I'll send it by end of day.,meetings;writing
+v-b1-feelings-work,B1,Feelings at work,swamped / burned out / on top of things / behind,I'm a bit swamped this week.,casual
+v-b2-standup,B2,Stand-up updates,blocked on / waiting on / wrap up / pick up / on track,I'm blocked on the API change.,meetings;eng
+v-b2-code-review,B2,Code review language,nit / LGTM / suggestion / non-blocking / address a comment,Non-blocking nit: rename this variable.,eng;writing
+v-b2-architecture,B2,Architecture talk,scalable / bottleneck / trade-off / coupling / single point of failure,The main trade-off is consistency vs latency.,eng;discussion
+v-b2-incidents,B2,Incidents and outages,outage / degraded / root cause / mitigate / roll back / postmortem,We mitigated it by rolling back.,eng;writing
+v-b2-estimates,B2,Estimates and planning,ballpark / rough estimate / scope / buffer / underestimate,Can you give me a ballpark figure?,meetings;eng
+v-b2-meeting-moves,B2,Meeting moves,"chime in / circle back / take this offline / to recap / for the record",Let's take this offline.,meetings
+v-b2-polite-disagreement,B2,Polite disagreement,I'm not sure I agree / I see it differently / Fair point but,Fair point but I see it a bit differently.,discussion;meetings
+v-b2-requests-favours,B2,Asking for help,Would you mind / Could you give me a hand / when you get a chance,Could you take a look when you get a chance?,writing;meetings
+v-b2-slack-register,B2,Chat abbreviations and tone,FYI / AFAIK / IMO / heads-up / ping / quick q,Heads-up: staging is down.,writing;casual
+v-b2-collocations-make-do,B2,make vs do vs take,make a decision / do a review / take ownership / make progress,Who's taking ownership of this?,general;eng
+v-b2-describing-change,B2,Describing trends and change,spike / drop / plateau / steady increase / fluctuate,Latency spiked around noon.,eng;writing
+v-b2-phrasal-tech,B2,Tech phrasal verbs,spin up / tear down / set up / roll out / figure out / look into,We'll roll it out gradually.,eng
+v-b2-false-friends,B2,Common false friends,actually / eventually / sensible / possibility vs opportunity,Eventually (= finally) we fixed it.,general
+v-b2-casual-chat,B2,Casual chat and reactions,No way / Fair enough / That makes sense / Sounds good / I'm down,Sounds good. Fair enough.,casual
+v-b2-adverbs-precision,B2,Precise adverbs,roughly / slightly / significantly / barely / entirely,It's slightly slower but significantly simpler.,discussion;eng
+v-c1-negotiation,C1,Negotiation and pushback,push back on / meet halfway / non-negotiable / leverage / concession,I'd push back on that deadline.,meetings;discussion
+v-c1-feedback-giving,C1,Giving feedback tactfully,I wonder if / one thing to consider / it might be worth / I'd be careful about,It might be worth adding a retry.,writing;eng
+v-c1-presenting,C1,Presenting and demoing,walk you through / bear with me / as you can see / to sum up / takeaway,Let me walk you through the flow.,meetings
+v-c1-precise-verbs,C1,Precise verbs over generic ones,streamline / mitigate / leverage / deprecate / consolidate / surface,This change surfaces the error earlier.,eng;writing
+v-c1-idioms-work,C1,Workplace idioms,on the same page / low-hanging fruit / move the needle / a can of worms,Let's go for the low-hanging fruit first.,meetings;casual
+v-c1-hedging-vocab,C1,Hedging vocabulary,arguably / somewhat / to a certain extent / presumably / it appears that,This is arguably the cleaner design.,discussion;writing
+v-c1-formal-informal-pairs,C1,Formal vs informal pairs,obtain/get / commence/start / assist/help / inquire/ask,Please let us know if we can assist.,writing
+v-c1-technical-writing,C1,Technical writing vocabulary,prerequisite / caveat / edge case / backward compatible / out of scope,One caveat: this isn't backward compatible.,writing;eng
+v-c1-collocations-strong,C1,Strong collocations,heavily rely / tightly coupled / strongly recommend / highly unlikely,This is highly unlikely to happen in prod.,eng;discussion
+v-c1-humour-banter,C1,Light banter,it's not my first rodeo / famous last words / works on my machine,Famous last words.,casual
+v-c2-nuance-synonyms,C2,Nuanced near-synonyms,flaw / defect / glitch / regression / quirk,It's less a bug than a quirk of the API.,eng;discussion
+v-c2-rhetoric,C2,Persuasive rhetoric,make a case for / the crux of the matter / by no means / it stands to reason,The crux of the matter is ownership.,discussion;writing

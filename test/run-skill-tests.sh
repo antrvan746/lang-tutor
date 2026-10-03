@@ -19,7 +19,10 @@
 # Env:
 #   LANG_TUTOR_TEST_MODEL  model for test runs (default: haiku, cheapest)
 #
-# Available tests: routing, alias, fallback, modes, memory
+# Available tests: routing, alias, fallback, modes, memory, session
+#
+# Deterministic unit tests for the learn-language CLI live in test/test_tutor.py:
+#   python3 -m unittest discover -s test -p 'test_*.py'
 
 set -uo pipefail
 
@@ -52,7 +55,7 @@ run_claude() {
     --plugin-dir "$REPO_DIR" \
     --add-dir "$SKILL_DIR" \
     --output-format stream-json --verbose \
-    --allowedTools "Read,Write,Edit" \
+    --allowedTools "Read,Write,Edit${EXTRA_TOOLS:+,$EXTRA_TOOLS}" \
     --permission-mode acceptEdits \
     ${2:+--resume "$2"} >"$OUT" 2>"$OUT.err"
   if [ $? -ne 0 ]; then
@@ -186,9 +189,36 @@ test_memory() {
   assert_read "languages/portuguese.md" || return 1
 }
 
+# learn-language: a bare invocation plans with tutor.py, reads the session
+# reference, and asks exactly one quiz question without revealing the answer.
+# The learner workspace is a temp LANG_TUTOR_HOME, never the real ~/.lang-tutor.
+test_session() {
+  new_env
+  export LANG_TUTOR_HOME="$TMP/coach"
+  python3 "$REPO_DIR/skills/learn-language/scripts/tutor.py" --lang english init \
+    --native vietnamese --level B2 --target C1 --focus-tags eng,meetings >/dev/null || return 1
+  EXTRA_TOOLS="Bash(python3:*)" run_claude "/lang-tutor:learn-language"
+  local rc=$?
+  unset LANG_TUTOR_HOME
+  [ $rc -eq 0 ] || return 1
+  assert_read "learn-language/reference/session.md" || return 1
+  if jq -e 'select(.type == "assistant") | .message.content[]? | select(.type == "tool_use" and .name == "Bash") | select(.input.command | test("tutor.py.* next"))' "$OUT" >/dev/null; then
+    echo "  ok: planned with tutor.py next"
+  else
+    echo "  FAIL: no 'tutor.py next' call"
+    return 1
+  fi
+  assert_response_contains "Q1" || return 1
+  if printf '%s' "$RESULT_TEXT" | grep -q "Q2"; then
+    echo "  FAIL: asked more than one question in a turn"
+    return 1
+  fi
+  echo "  ok: one question per turn"
+}
+
 # --- main --------------------------------------------------------------------
 
-ALL_TESTS="routing alias fallback modes memory"
+ALL_TESTS="routing alias fallback modes memory session"
 TESTS="${*:-$ALL_TESTS}"
 
 echo "model: $MODEL"

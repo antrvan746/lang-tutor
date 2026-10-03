@@ -51,7 +51,53 @@ Then Claude Code handles your actual request as usual. The language feedback is 
 - **Irregulars never slip past** — every guide sorts its irregular forms into three tiers (class irregular, locally irregular, fully irregular), because a learner who meets an irregular unflagged will generalize the wrong pattern
 - **Preference persistence** — your language, level, and native language are saved across sessions
 - **Works with any language** — dedicated guides for the most popular languages, plus a generic guide for everything else. If Claude speaks it, you can learn it
+- **Micro-sessions with spaced review** — `/learn-language` gives you a 5-10 minute lesson and a one-question-at-a-time quiz whenever you want one, and brings your own mistakes back until you get them right on three separate days
+- **Learn from your textbook** — import a PDF, DOCX, EPUB, or Markdown course book and study it unit by unit, with its exercises and answer key, and progress tracked per exercise
+- **Works beyond Claude Code** — the same skills and learner files work in Codex and any agent that reads `AGENTS.md`
 - **Non-intrusive** — feedback appears in a compact block before the normal response. Your coding workflow stays intact
+
+## Study mode: `/learn-language`
+
+The feedback above happens while you work. `/learn-language` adds deliberate practice: a 5-10 minute micro-session you can start any time, built on spaced review of your own mistakes.
+
+```
+/learn-language init        # once: level, goals, focus areas, learning path (+ optional placement quiz)
+/learn-language             # a session: review what's due, or one new grammar point / vocabulary theme
+/learn-language review      # reviews only
+/learn-language book add ~/Books/english-grammar-in-use.pdf
+/learn-language book        # continue the book: next unit, next exercise
+/learn-language status      # progress, accuracy by level, weakest items, book progress
+/learn-language html        # only when you want it: the quiz as a standalone web page
+```
+
+A session is a micro-lesson (≤120 words), then 3-5 quiz questions asked **one at a time in the chat**: sentence correction, fill in the blank, choose the most natural option, rewrite to sound native. The answer is never revealed before you reply. Every mistake goes into a spaced-review loop:
+
+```
+you make a mistake (in a quiz, a book exercise, or while coding with /lang-tutor)
+  → logged to reviews/due.json, due tomorrow
+  → comes back in a quiz → wrong again → back to the start, due tomorrow
+  → right on 3 separate days (1 → 3 → 7 day gaps) → mastered
+  → one check after 60 days → retired
+```
+
+New material follows a CEFR curriculum tagged by context (software engineering, meetings, technical discussion, workplace writing, casual conversation): mostly your level, with a lower-level review every 4th session and a stretch topic every 5th. Other languages use their guide's grammar syllabus, or a curriculum CSV you drop into your workspace.
+
+**Books and course files.** `book add` converts PDF, DOCX, EPUB, HTML, Markdown, or text to Markdown (`books/<slug>/book.md`, so you can check it), splits it into units, finds the exercises and the answer key, and then drives your sessions: one unit's lesson, one exercise block per session, graded against the book's key, with progress per unit and per exercise. DOCX, EPUB, and HTML convert with the Python standard library; for PDF the converter uses whatever is available (`pymupdf4llm`, `pypdf`, `pdftotext`, `markitdown`) and otherwise fetches `pymupdf4llm` into a throwaway environment with `uv`, so the agent can set up the tooling itself. Scanned PDFs need OCR first (`ocrmypdf`).
+
+**Everything is plain files** in `~/.lang-tutor/<language>/` (or `$LANG_TUTOR_HOME`, or a coach folder; see below):
+
+```
+profile.md          level, target, focus, learning path
+progress.md         generated: sessions, streak, accuracy by level, weakest items, books
+history.jsonl       one line per session
+reviews/due.json    the spaced-review schedule
+mistakes/           generated: grammar.md, vocabulary.md, naturalness.md
+sessions/           one log per day
+books/<slug>/       book.md + index.json (units, exercises, progress)
+curriculum/         optional overrides (e.g. CEFR-J grammar.csv / vocabulary.csv)
+```
+
+The bookkeeping is done by a small standard-library Python CLI (`skills/learn-language/scripts/tutor.py`), not by the model, so the review schedule behaves the same in every session and every agent. When a workspace exists, `/lang-tutor` also logs the errors it corrects while you code, so what you write every day feeds your reviews. Tip for Claude Code: allow `Bash(python3:*)` (or the script's full path) in your permissions so logging doesn't prompt.
 
 ## Why learn English (or any language) with Claude Code?
 
@@ -108,6 +154,8 @@ The skill is split for token efficiency. A slim `SKILL.md` handles your language
 
 Your status is stored in Claude's auto-memory, so it persists across sessions and plugin updates. An optional `UserPromptSubmit` hook re-injects a one-line reminder on each message so tutor mode can't drift out of attention in long sessions; it costs ~60 tokens per message while active and emits nothing in sessions where lang-tutor was never activated.
 
+`learn-language` follows the same pattern: a slim `SKILL.md` routes `init`, sessions, books, and HTML to a reference file in `skills/learn-language/reference/`, which is loaded only for that route. It reuses the `lang-tutor` language guides for each language's framework, syllabus, and irregulars, so the two skills teach consistently.
+
 ## Install
 
 ### Via Plugin Marketplace
@@ -117,20 +165,29 @@ Your status is stored in Claude's auto-memory, so it persists across sessions an
 /plugin install lang-tutor@hamsamilton-lang-tutor
 ```
 
-### Direct Install from GitHub
+The plugin namespaces its skills: `/lang-tutor:lang-tutor` and `/lang-tutor:learn-language`.
 
-Clone the repo anywhere, then symlink the skill directory (it must be the `skills/lang-tutor` subdirectory, so the `languages/` guides come along):
+### Direct install (Claude Code, Codex, other agents)
+
+Clone the repo anywhere and run the installer. It symlinks both skills (`lang-tutor` and `learn-language`) for every agent it finds, so `git pull` updates them all:
 
 ```bash
 git clone https://github.com/hamsamilton/lang-tutor ~/lang-tutor
-ln -s ~/lang-tutor/skills/lang-tutor ~/.claude/skills/lang-tutor
+~/lang-tutor/install.sh            # or: install.sh claude | install.sh codex
 ```
 
-Then activate in any Claude Code session:
+- **Claude Code**: `~/.claude/skills/`. Use `/learn-language` and `/lang-tutor`.
+- **Codex** (and other tools that read the Agent Skills format): `~/.agents/skills/`. Use `$learn-language`, or ask for a lesson in plain words. Codex's sandbox can't write outside the working directory, so either use a coach folder (below) or add `~/.lang-tutor` to `writable_roots` under `[sandbox_workspace_write]` in `~/.codex/config.toml`.
+- **Any agent that reads `AGENTS.md`** (Cursor, Gemini CLI, aider, ...): make a coach folder and run the agent inside it.
 
 ```bash
-/lang-tutor
+~/lang-tutor/install.sh coach ~/english-coach
+cd ~/english-coach && codex     # or claude, cursor, ... then: "learn-language init"
 ```
+
+A coach folder holds an `AGENTS.md` (plus a `CLAUDE.md` link) pointing at the skills, and the learner files themselves, so it can live in git and travel between machines and agents. `./install.sh uninstall` removes the links and leaves your learner data alone.
+
+The skills need `python3` (3.9+) for `learn-language`; `lang-tutor` alone needs nothing.
 
 ## Usage
 
@@ -146,6 +203,10 @@ Then activate in any Claude Code session:
 
 # After first use, just activate — it remembers your preferences
 /lang-tutor
+
+# Deliberate practice (see "Study mode" above)
+/learn-language init
+/learn-language
 ```
 
 ## Proficiency levels
@@ -198,6 +259,12 @@ Yes — set English as your target language (`/lang-tutor English <your native l
 
 **Is lang-tutor free?**
 Yes, it's free and open source under the MIT license. Install it as a Claude Code plugin or clone it directly from GitHub.
+
+**Does lang-tutor give me quizzes or track my progress?**
+Yes — `/learn-language` runs short quiz sessions with spaced review of your own mistakes, follows a CEFR curriculum or a textbook you import (PDF, DOCX, EPUB, Markdown), and tracks your progress in plain files you can read and keep in git.
+
+**Does it work with Codex or other coding agents?**
+Yes. The skills use the open Agent Skills format and all state lives in plain files driven by a standard-library Python CLI. `install.sh` sets up Claude Code and Codex, and `install.sh coach DIR` creates an `AGENTS.md` folder that any agent can use.
 
 **Do I need to know the language already?**
 No. lang-tutor supports beginner, intermediate, and advanced proficiency levels, with feedback depth calibrated to each.

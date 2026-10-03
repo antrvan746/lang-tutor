@@ -1,0 +1,76 @@
+# English grammar topics, CEFR-ordered. Authored for lang-tutor, aligned with the
+# British Council / EAQUALS Core Inventory and English Profile level placements.
+# Order inside a level is teaching order. tags: eng, meetings, writing, discussion, casual, general.
+# Replace or extend per learner by copying to <workspace>/curriculum/grammar.csv (e.g. CEFR-J data).
+id,level,topic,summary,example,tags
+g-a1-be-have,A1,be and have got,Forms of be and have (got) for identity and possession,She's a developer. I've got two monitors.,general
+g-a1-present-simple,A1,Present simple,Habits and facts; third-person -s,The build runs every night.,general;eng
+g-a1-articles-basic,A1,a/an vs the,First mention vs known thing,I found a bug. The bug is in the parser.,general;eng
+g-a1-plurals-countable,A1,Plurals and countable nouns,Regular/irregular plurals; much vs many,How many tests failed?,general
+g-a1-there-is,A1,there is / there are,Existence and quantity,There are three open PRs.,general;eng
+g-a1-can-ability,A1,can for ability and permission,Can + base verb,Can you see my screen?,meetings;casual
+g-a1-prepositions-time,A1,in/on/at for time,in July / on Monday / at 3 pm,Let's meet on Friday at 10.,meetings;casual
+g-a2-past-simple,A2,Past simple,Finished actions; regular -ed and common irregulars,I fixed it yesterday.,general
+g-a2-present-continuous,A2,Present continuous,Now and temporary situations,I'm looking into it.,eng;meetings
+g-a2-future-going-to,A2,going to for plans,Intentions and evidence-based predictions,We're going to refactor the auth module.,meetings
+g-a2-present-cont-future,A2,Present continuous for arrangements,Fixed future arrangements,I'm meeting the client on Tuesday.,meetings;casual
+g-a2-comparatives,A2,Comparatives and superlatives,-er/-est vs more/most; irregulars,This approach is simpler and faster.,discussion
+g-a2-object-pronouns,A2,Object pronouns and possessives,me/him/them; my/mine,Is this branch yours or mine?,general
+g-a2-should-advice,A2,should for advice,should / shouldn't + base verb,You should add a test for that.,eng;discussion
+g-a2-adverbs-frequency,A2,Adverbs of frequency,Position of always/usually/never,We usually deploy on Tuesdays.,general
+g-a2-some-any,A2,some / any / no,Quantifiers in statements and questions,Are there any questions?,meetings
+g-b1-present-perfect,B1,Present perfect vs past simple,Unfinished time / result now vs finished time,I've already merged it. I merged it at 9.,eng;writing
+g-b1-present-perfect-continuous,B1,Present perfect continuous,Duration up to now with for/since,I've been working on this since Monday.,eng;meetings
+g-b1-past-continuous,B1,Past continuous,Background action interrupted by past simple,I was deploying when the alert fired.,eng;casual
+g-b1-first-conditional,B1,First conditional,Real future possibility: if + present / will,If the tests pass we'll ship today.,eng;meetings
+g-b1-will-vs-going-to,B1,will vs going to,Instant decisions/offers vs prior plans,I'll take a look. / I'm going to rewrite it.,meetings
+g-b1-modals-obligation,B1,must / have to / don't have to,Obligation vs lack of necessity,You don't have to review it today.,eng;writing
+g-b1-gerund-infinitive,B1,Gerunds vs infinitives,Verb patterns: avoid doing / decide to do,We decided to postpone. Consider adding a flag.,general;writing
+g-b1-relative-defining,B1,Defining relative clauses,who/that/which; omitting the object pronoun,The service (that) we deprecated still gets traffic.,eng;writing
+g-b1-passive-present-past,B1,Passive voice (present/past),Focus on the action or result,The bug was introduced in v2.3.,eng;writing
+g-b1-used-to,B1,used to,Past habits and states,We used to deploy manually.,casual;discussion
+g-b1-question-forms,B1,Question forms,Auxiliary inversion and subject questions,What caused the outage? Why did it fail?,meetings;eng
+g-b1-indirect-questions,B1,Indirect questions,Polite questions with statement word order,Could you tell me where the logs are?,meetings;writing
+g-b1-quantifiers,B1,Quantifiers,a few / a little / plenty of / hardly any,We have a little time but very few reviewers.,general
+g-b1-dependent-prepositions,B1,Dependent prepositions,Fixed verb/adjective + preposition pairs,depend on / responsible for / good at,general;eng
+g-b2-second-conditional,B2,Second conditional,Hypothetical present/future,If we had more time we'd write a proper migration.,discussion;meetings
+g-b2-third-conditional,B2,Third conditional,Hypothetical past and regret,If we'd added monitoring we would have caught it.,eng;discussion
+g-b2-modals-deduction,B2,Modals of deduction,must / might / can't (have done),It must be a caching issue. It can't have been the DB.,eng;discussion
+g-b2-passive-advanced,B2,Passive with modals and perfect,should be done / has been fixed / is being reviewed,The PR is being reviewed. It should be rolled back.,eng;writing
+g-b2-reported-speech,B2,Reported speech,Backshift and reporting verbs,She said the API was stable. He suggested waiting.,meetings;writing
+g-b2-reporting-verbs,B2,Reporting verb patterns,suggest doing / recommend that / ask someone to,I'd recommend that we split the ticket.,meetings;writing
+g-b2-relative-nondefining,B2,Non-defining relative clauses,Commas and which/who; no that,"The cache, which we added last year, is now the bottleneck.",writing;eng
+g-b2-future-continuous-perfect,B2,Future continuous and future perfect,In progress at / completed by a future time,By Friday we'll have migrated all users.,meetings;writing
+g-b2-wish-if-only,B2,wish / if only,Regret and desire for change,I wish we had documented this.,casual;discussion
+g-b2-articles-advanced,B2,Articles with abstract and generic nouns,Zero article for general concepts; the for specific,Performance matters. The performance of this query is poor.,eng;writing
+g-b2-countability-tricky,B2,Uncountable nouns in tech,feedback / advice / information / software / equipment,Thanks for the feedback (not feedbacks).,eng;writing
+g-b2-phrasal-verbs-work,B2,Phrasal verbs at work,Separable vs inseparable; object pronoun position,Let's roll it back. / Can you look into it?,eng;meetings;casual
+g-b2-linking-contrast,B2,Linking contrast and concession,although / even though / despite / whereas / however,"Despite the delay, we shipped on time.",writing;discussion
+g-b2-linking-cause-result,B2,Cause and result linkers,due to / because of / as a result / therefore / so that,The job failed due to a timeout.,writing;eng
+g-b2-polite-requests,B2,Polite requests and softening,Would you mind / Could you possibly / I was wondering if,I was wondering if you could take a quick look.,meetings;writing
+g-b2-hedging-basic,B2,Hedging opinions,I think / it seems / probably / tends to,It seems the issue is intermittent.,discussion;meetings
+g-b2-agreeing-disagreeing,B2,Agreeing and disagreeing politely,"I see your point, but... / I'm not sure that's...",I see your point but I'm not sure it scales.,discussion;meetings
+g-b2-causative,B2,Causative have/get,have something done / get someone to do,We had the certificate renewed. I'll get Sam to check it.,eng;casual
+g-b2-verb-patterns-object,B2,Verb + object + infinitive,want/expect/allow someone to do; let/make someone do,The policy doesn't allow us to deploy on Fridays.,eng;writing
+g-b2-question-tags,B2,Question tags,Checking and confirming,"That's in staging, isn't it?",meetings;casual
+g-b2-so-such-too-enough,B2,so / such / too / enough,Intensity and sufficiency,The diff is too big to review. It's not fast enough.,eng;discussion
+g-b2-narrative-tenses,B2,Narrative tenses for incident reports,past simple / continuous / perfect together,We had just deployed when the error rate spiked.,writing;eng
+g-c1-mixed-conditionals,C1,Mixed conditionals,Past cause / present result and vice versa,If we had picked Postgres we wouldn't be migrating now.,discussion;eng
+g-c1-inversion,C1,Inversion for emphasis,Negative adverbials and conditional inversion,"Rarely do we see this. Should you need help, ping me.",writing;discussion
+g-c1-cleft-sentences,C1,Cleft sentences,It's X that... / What we need is...,What worries me is the lack of tests.,discussion;meetings
+g-c1-hedging-advanced,C1,Advanced hedging and modality,would argue / arguably / to some extent / appear to,I'd argue that this is premature optimization.,discussion;writing
+g-c1-nominalisation,C1,Nominalisation for formal writing,Verbs to nouns for concise formal style,The introduction of caching reduced latency.,writing
+g-c1-participle-clauses,C1,Participle clauses,Reduced adverbial and relative clauses,"Having reviewed the logs, we found the cause.",writing
+g-c1-discourse-markers,C1,Discourse markers,that said / on balance / to be fair / by the same token,"That said, the trade-off might be worth it.",discussion;meetings
+g-c1-passive-reporting,C1,Impersonal passive,It is thought that... / X is said to...,The outage is believed to have started at 02:00.,writing
+g-c1-future-in-past,C1,Future in the past,was going to / would / was about to,I was going to mention that but we ran out of time.,meetings;casual
+g-c1-emphasis-do,C1,Emphatic do and fronting,Adding emphasis without shouting,I do understand the concern.,meetings;discussion
+g-c1-ellipsis-substitution,C1,Ellipsis and substitution,so / not / do so / one(s) to avoid repetition,Will it break anything? I hope not.,casual;meetings
+g-c1-modal-perfects-criticism,C1,Modal perfects for criticism and speculation,should have / needn't have / could have,We needn't have rewritten the whole thing.,discussion;eng
+g-c1-advanced-linking,C1,Formal linking,whereby / insofar as / given that / provided that,We can ship provided that QA signs off.,writing;discussion
+g-c1-compound-adjectives,C1,Compound adjectives,well-documented / long-running / three-step,It's a long-running background job.,eng;writing
+g-c1-register-shift,C1,Register shift,Adapting the same message for Slack vs email vs report,FYI the deploy's done. / Please note that the deployment is complete.,writing;meetings
+g-c2-subjunctive,C2,Subjunctive and formal mandative,It's essential that he be... / I suggest she attend,We recommend that every service expose a health check.,writing
+g-c2-advanced-inversion,C2,Advanced inversion and fronting,"Not until... / Such was... / Little did we know",Little did we know the flag was still on.,writing;discussion
+g-c2-nuanced-modality,C2,Nuanced modality,may well / might as well / can't help but,We might as well fix both while we're here.,discussion;casual
+g-c2-idiomatic-grammar,C2,Idiomatic grammar patterns,"the more..., the more... / as it were / be that as it may",The more we abstract the harder it gets to debug.,discussion

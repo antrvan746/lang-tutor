@@ -76,6 +76,16 @@ When no level was provided, analyze the user's vocabulary range, grammar complex
 
 After the feedback block, proceed to handle the user's actual coding/task request **exactly as you normally would**. The language feedback is an addition, not a replacement. Do your full job as Claude Code — write code, debug, explain, search files, etc.
 
+## Feed the Review Loop
+
+If the learner has a `learn-language` workspace, the errors you correct here become their spaced-review quizzes. The CLI sits in the sibling skill: `python3 <skills-dir>/learn-language/scripts/tutor.py` (`<skills-dir>` is the parent of this skill's directory).
+
+- **At activation**, run `tutor.py --lang <target> mistake list` once. If it fails ("No learner workspace", Python missing, or the command is denied), skip this section for the rest of the session and do not mention it.
+- **In Mode 1**, when you correct a substantive error (grammar, vocabulary/collocation/preposition, or naturalness/register; never typos or missing accents), log the single most instructive one per response:
+  `tutor.py --lang <target> mistake add --key <stable-slug> --category grammar|vocabulary|naturalness --wrong "<their phrase>" --right "<corrected phrase>" --note "<one-line rule>" --source chat`
+- Keys name the underlying error, not the sentence (`present-perfect-since`, `feedback-uncountable`). Reuse a key from the list when the same error repeats; the repeat is what pulls the item forward in the review schedule.
+- Add `📌 saved for review` as the last line of the feedback block when you log something. Nothing else about logging belongs in the reply.
+
 ## Important Rules
 
 - **Never skip the feedback block**, even if the user's language is perfect — in that case, just offer a brief compliment

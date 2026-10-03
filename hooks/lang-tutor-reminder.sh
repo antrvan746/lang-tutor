@@ -39,5 +39,5 @@ if [ -n "$cwd" ]; then
   fi
 fi
 
-printf 'Reminder: lang-tutor mode is active this session. Before handling this message, apply the lang-tutor skill: detect the message language, output the feedback block per the loaded guides (languages/_common.md plus the target language guide), then handle the request normally. %s\n' "${prefs:+Saved preferences: $prefs}"
+printf 'Reminder: lang-tutor mode is active this session. Before handling this message, apply the lang-tutor skill: detect the message language, output the feedback block per the loaded guides (languages/_common.md plus the target language guide), log the most instructive error with tutor.py if review logging is on, then handle the request normally. %s\n' "${prefs:+Saved preferences: $prefs}"
 exit 0

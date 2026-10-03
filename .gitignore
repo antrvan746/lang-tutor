@@ -8,3 +8,7 @@
 .claude/routines/.state/
 .claude/worktrees/
 .claude/checkpoints/
+
+# Python
+__pycache__/
+*.pyc

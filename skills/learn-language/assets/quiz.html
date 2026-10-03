@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__QUIZ_TITLE__</title>
+<style>
+  :root {
+    --bg: #f7f6f2; --card: #ffffff; --text: #1d1d1b; --muted: #6b6a65; --line: #e2e0d8;
+    --accent: #2f6f5e; --accent-ink: #ffffff; --good: #2e7d4f; --good-bg: #e6f4ea;
+    --bad: #b3261e; --bad-bg: #fbe9e7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161614; --card: #201f1c; --text: #ecebe6; --muted: #a09e96; --line: #33322d;
+      --accent: #6cc3a8; --accent-ink: #10201b; --good: #7bd197; --good-bg: #1b2e22;
+      --bad: #f2948c; --bad-bg: #36201e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161614; --card: #201f1c; --text: #ecebe6; --muted: #a09e96; --line: #33322d;
+    --accent: #6cc3a8; --accent-ink: #10201b; --good: #7bd197; --good-bg: #1b2e22;
+    --bad: #f2948c; --bad-bg: #36201e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 17px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.35rem; margin: 0 0 4px; }
+  .meta { color: var(--muted); font-size: .9rem; margin-bottom: 20px; }
+  .bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin-bottom: 24px; }
+  .bar > div { height: 100%; background: var(--accent); width: 0; transition: width .25s; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+  .kind { text-transform: uppercase; letter-spacing: .06em; font-size: .75rem; color: var(--muted); }
+  .prompt { font-size: 1.1rem; margin: 6px 0 18px; white-space: pre-wrap; }
+  .opts { display: grid; gap: 10px; }
+  button { font: inherit; cursor: pointer; border-radius: 8px; }
+  .opt { text-align: left; padding: 12px 14px; border: 1px solid var(--line); background: transparent; color: var(--text); }
+  .opt:hover:not(:disabled) { border-color: var(--accent); }
+  .opt.good { background: var(--good-bg); border-color: var(--good); }
+  .opt.bad { background: var(--bad-bg); border-color: var(--bad); }
+  textarea { width: 100%; font: inherit; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line);
+             background: var(--bg); color: var(--text); min-height: 72px; resize: vertical; }
+  .primary { margin-top: 14px; padding: 10px 18px; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .ghost { margin-top: 14px; margin-left: 8px; padding: 10px 14px; border: 1px solid var(--line); background: transparent; color: var(--text); }
+  .feedback { margin-top: 16px; padding: 12px 14px; border-radius: 8px; }
+  .feedback.good { background: var(--good-bg); }
+  .feedback.bad { background: var(--bad-bg); }
+  .feedback b { display: block; margin-bottom: 4px; }
+  pre { white-space: pre-wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; font-size: .9rem; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title"></h1>
+  <div class="meta" id="meta"></div>
+  <div class="bar"><div id="progress"></div></div>
+  <section class="card" id="question"></section>
+  <section class="card" id="summary" hidden></section>
+</main>
+<script>
+const QUIZ = __QUIZ_JSON__;
+const qs = QUIZ.questions;
+const results = [];
+let i = 0;
+
+const $ = (id) => document.getElementById(id);
+const norm = (s) => String(s || "").toLowerCase().replace(/[’']/g, "'").replace(/[.!?,;:"]/g, "").replace(/\s+/g, " ").trim();
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const LABEL = { choice: "Choose the most natural option", fill: "Fill in the blank", correct: "Correct the sentence", rewrite: "Rewrite it more naturally" };
+
+$("title").textContent = QUIZ.title || "Quiz";
+$("meta").textContent = [QUIZ.language, QUIZ.topic, `${qs.length} questions`].filter(Boolean).join(" · ");
+
+function render() {
+  $("progress").style.width = `${(i / qs.length) * 100}%`;
+  if (i >= qs.length) return summary();
+  const q = qs[i];
+  const type = q.type || (q.options ? "choice" : "fill");
+  let body = `<div class="kind">${i + 1}/${qs.length} · ${esc(LABEL[type] || type)}</div><div class="prompt">${esc(q.prompt)}</div>`;
+  if (type === "choice") {
+    body += `<div class="opts">${q.options.map((o, k) => `<button class="opt" data-k="${k}">${esc(o)}</button>`).join("")}</div>`;
+  } else {
+    body += `<textarea id="answer" placeholder="Your answer"></textarea><button class="primary" id="check">Check</button>`;
+  }
+  body += `<div id="fb"></div>`;
+  $("question").innerHTML = body;
+  if (type === "choice") {
+    document.querySelectorAll(".opt").forEach((b) => b.addEventListener("click", () => answerChoice(q, Number(b.dataset.k))));
+  } else {
+    $("check").addEventListener("click", () => answerText(q, type));
+    $("answer").focus();
+  }
+}
+
+function correctIndex(q) {
+  return typeof q.answer === "number" ? q.answer : q.options.findIndex((o) => norm(o) === norm(q.answer));
+}
+
+function answerChoice(q, k) {
+  const right = correctIndex(q);
+  document.querySelectorAll(".opt").forEach((b, n) => {
+    b.disabled = true;
+    if (n === right) b.classList.add("good");
+    else if (n === k) b.classList.add("bad");
+  });
+  finish(q, k === right, q.options[k]);
+}
+
+function answerText(q, type) {
+  const given = $("answer").value;
+  if (!given.trim()) return;
+  $("answer").disabled = true;
+  $("check").hidden = true;
+  const accepted = [q.answer, ...(q.accept || [])].map(norm);
+  if (accepted.includes(norm(given))) return finish(q, true, given);
+  if (type === "rewrite") {
+    // Free rewrites can't be string-matched: show the model answer and let the learner judge.
+    $("fb").innerHTML = `<div class="feedback"><b>Model answer</b>${esc(q.answer)}${q.explanation ? `<p>${esc(q.explanation)}</p>` : ""}
+      <button class="primary" id="selfGood">Mine says the same</button><button class="ghost" id="selfBad">Mine is off</button></div>`;
+    $("selfGood").onclick = () => finish(q, true, given, true);
+    $("selfBad").onclick = () => finish(q, false, given, true);
+    return;
+  }
+  finish(q, false, given);
+}
+
+function finish(q, ok, given, selfJudged) {
+  results.push({ q, ok, given });
+  const fb = selfJudged ? "" : `<div class="feedback ${ok ? "good" : "bad"}"><b>${ok ? "Correct" : "Not quite"}</b>
+    ${ok ? "" : `Answer: ${esc(typeof q.answer === "number" ? q.options[q.answer] : q.answer)}<br>`}${esc(q.explanation || "")}</div>`;
+  $("fb").innerHTML = fb + `<button class="primary" id="next">${i + 1 < qs.length ? "Next" : "See results"}</button>`;
+  $("next").onclick = () => { i += 1; render(); };
+  $("next").focus();
+}
+
+function summary() {
+  $("question").hidden = true;
+  const score = results.filter((r) => r.ok).length;
+  const lines = [`Quiz results — ${QUIZ.title || "quiz"}: ${score}/${qs.length}`];
+  results.forEach((r, n) => {
+    lines.push(`${n + 1}. ${r.ok ? "✓" : "✗"}${r.q.key ? ` [${r.q.key}]` : ""} ${r.q.prompt.replace(/\s+/g, " ").slice(0, 80)}${r.ok ? "" : ` — I answered: ${String(r.given).replace(/\s+/g, " ")}`}`);
+  });
+  const text = lines.join("\n");
+  $("summary").hidden = false;
+  $("summary").innerHTML = `<h1>${score}/${qs.length}</h1>
+    <p>Paste this back into the chat so your tutor can update your review schedule:</p>
+    <pre id="out">${esc(text)}</pre><button class="primary" id="copy">Copy results</button>`;
+  $("copy").onclick = async () => {
+    try { await navigator.clipboard.writeText(text); $("copy").textContent = "Copied"; }
+    catch { $("copy").textContent = "Select the text above and copy it"; }
+  };
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,11 +1,13 @@
 {
   "name": "lang-tutor-marketplace",
-  "owner": { "name": "samhamilton" },
+  "owner": {
+    "name": "samhamilton"
+  },
   "plugins": [
     {
       "name": "lang-tutor",
       "source": "./",
-      "description": "Language learning environment for Claude Code. Get grammar corrections, idiom suggestions, and vocabulary breakdowns while you work — write in your target language for feedback, or your native language for translations."
+      "description": "Language learning environment for Claude Code. Corrections and vocabulary breakdowns while you work, plus /learn-language micro-sessions with spaced review, onboarding, and textbook (PDF/DOCX/EPUB) study with progress tracking."
     }
   ]
 }
