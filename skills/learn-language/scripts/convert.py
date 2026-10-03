@@ -435,16 +435,19 @@ EXERCISE_RE = re.compile(
     rf"^\s*(?:#+\s*|\*\*|\d+[.)]\s*)?(?:{_EX_WORDS})(?![a-zà-ỹ])|^\s*(?:#+\s*)?ex\.\s*\d",
     re.IGNORECASE,
 )
-# Workbook-style numbered task instructions: "**1 Complete these sentences ...**".
-NUMBERED_TASK_RE = re.compile(r"^\s*(?:#+\s*)?\*\*\s*\d{1,2}\s+[A-Z][a-z]")
+# Workbook-style numbered task instructions: "**1 Complete these sentences ...**",
+# or unit.exercise numbering: "1.3 Write questions." / "###### **12.2 Put the verb ...**".
+NUMBERED_TASK_RE = re.compile(
+    r"^\s*(?:#+\s*)?(?:\*\*\s*\d{1,2}\s+[A-Z][a-z]|(?:\*\*)?\s*\d{1,3}\.\d{1,2}\s+(?:\*\*\s*)?[A-Z][a-z])"
+)
 _ANSWERS_RE = re.compile(
-    r"answer key|answers|key to (?:the )?exercises|solutions|đáp án|lời giải|lösungen|"
+    r"answer key|answers|key to\b|solutions|đáp án|lời giải|lösungen|"
     r"corrigés?|soluciones|soluzioni|respostas|ответы|解答|答案|정답",
     re.IGNORECASE,
 )
 _FRONT_RE = re.compile(
     r"^(?:table of )?contents$|^preface|^foreword|^introduction$|^acknowledg|^copyright|"
-    r"^index$|^bibliography|^about (?:the|this) (?:author|\w*book|course)|^mục lục|^lời (?:nói đầu|giới thiệu)|"
+    r"^index$|^appendix|^additional exercises|^study guide|^bibliography|^about (?:the|this) (?:author|\w*book|course)|^mục lục|^lời (?:nói đầu|giới thiệu)|"
     r"^inhalt|^sommaire|^índice|^目次|^目录|^차례",
     re.IGNORECASE,
 )
@@ -485,7 +488,73 @@ def _dedupe(heads: list[tuple[int, int, str]]) -> list[tuple[int, int, str]]:
     return out
 
 
+_UNIT_NUM_RE = re.compile(rf"^(?:{_UNIT_WORDS})\s*(\d+)", re.IGNORECASE)
+_END_MATTER_RE = re.compile(
+    r"^(?:appendix\s*\d+|additional exercises|study guide|key to (?:the )?(?:exercises|additional exercises|study guide)|"
+    r"answer key|answers|index)\b",
+    re.IGNORECASE,
+)
+
+
+def _numbered_sequence(lines: list[str]) -> tuple[list[tuple[int, str]], int]:
+    """Unit starts for books whose "Unit N" line repeats as a running header on every
+    page of the unit (two-page-spread workbooks): first line of each number, in order,
+    then the end matter (appendices, answer keys, index). Returns (splits, unit_count)."""
+    seq: list[tuple[int, str]] = []
+    last = 0
+    for i, line in enumerate(lines):
+        text = _clean_title(line.lstrip("#").strip())
+        if len(text) > 120 or len(re.findall(rf"(?:{_UNIT_WORDS})\s*\d", text, re.IGNORECASE)) > 1:
+            continue  # contents lines list several units
+        m = _UNIT_NUM_RE.match(text)
+        if m and last < int(m.group(1)) <= last + 3:
+            last = int(m.group(1))
+            if text == m.group(0):  # bare running header: borrow the heading that follows
+                nxt = next((l for l in lines[i + 1:i + 5] if l.strip() and not l.lstrip().startswith("<!--")), "")
+                if nxt.lstrip().startswith("#") and not EXERCISE_RE.match(_clean_title(nxt.lstrip("#").strip())):
+                    text = f"{text} {_clean_title(nxt.lstrip('#').strip())}"
+            seq.append((i, text))
+    units = len(seq)
+    if units < 3:
+        return seq, units
+    # Still-bare titles: take the unit's name from the contents pages ("12 for and since ...").
+    first = seq[0][0]
+    names: dict[int, str] = {}
+    for line in lines[:first]:
+        parts = re.split(r"(?:^|(?<=\s))(\d{1,3})\s+(?=[^\d\s])", _clean_title(line).lstrip("-• ").strip())
+        for n, title in zip(parts[1::2], parts[2::2]):
+            title = re.sub(r"\s+", " ", title).strip()
+            if re.search(r"[^\W\d_]", title) and len(title) <= 90:
+                names.setdefault(int(n), title)  # units are listed before appendices
+    for k, (i, text) in enumerate(seq):
+        m = _UNIT_NUM_RE.match(text)
+        if m and text == m.group(0) and names.get(int(m.group(1))):
+            seq[k] = (i, f"{text} {names[int(m.group(1))]}")
+    seen: set[str] = set()
+    for i in range(seq[-1][0] + 1, len(lines)):
+        text = _clean_title(lines[i].lstrip("#").strip())
+        m = _END_MATTER_RE.match(text) if len(text) <= 80 else None
+        key = re.sub(r"\s+", " ", m.group(0).lower()) if m else ""
+        if m and key not in seen:  # running headers repeat "Appendix 1" on every page
+            seen.add(key)
+            seq.append((i, text))
+    return seq, units
+
+
 def _pick_split(lines: list[str]) -> tuple[list[tuple[int, str]], str]:
+    split, strategy = _pick_heading_split(lines)
+    seq, units = _numbered_sequence(lines)
+    lessons = sum(1 for _, title in split if classify_unit(title) == "lesson")
+    # A heading split on unit names is already good; only replace it when the running
+    # headers find far more units. Any other heading split loses to more units.
+    span = (seq[units - 1][0] - seq[0][0]) / max(len(lines), 1) if units >= 3 else 0
+    # The units must run through the book (not "Part 1/2/3" inside one chapter).
+    if span >= 0.4 and (units > 1.5 * lessons if "unit names" in strategy else units >= lessons):
+        return seq, "numbered unit names (first line of each unit number)"
+    return split, strategy
+
+
+def _pick_heading_split(lines: list[str]) -> tuple[list[tuple[int, str]], str]:
     heads = _dedupe(_headings(lines))
     # Unit-named headings ("Unit 3", "Lesson 4") win when they dominate their level
     # with distinct titles and outnumber any shallower structural level (units are
@@ -522,11 +591,12 @@ def classify_unit(title: str) -> str:
 
 def unit_exercises(lines: list[str], start: int, end: int) -> list[dict]:
     """Exercise markers inside a unit; start/end are 1-indexed inclusive."""
-    out = []
-    for i in range(start - 1, min(end, len(lines))):
-        if EXERCISE_RE.match(lines[i]) or NUMBERED_TASK_RE.match(lines[i]):
-            out.append({"n": len(out) + 1, "line": i + 1, "label": _clean_title(lines[i].lstrip("#").strip())[:80]})
-    return out
+    rng = range(start - 1, min(end, len(lines)))
+    # Numbered tasks ("1.3 Write questions") are the exercises when present; a bare
+    # "Exercises" header above them is not one more.
+    hits = [i for i in rng if NUMBERED_TASK_RE.match(lines[i])] or [i for i in rng if EXERCISE_RE.match(lines[i])]
+    return [{"n": n + 1, "line": i + 1, "label": _clean_title(lines[i].lstrip("#").strip())[:80]}
+            for n, i in enumerate(hits)]
 
 
 def index_units(md: str) -> tuple[list[dict], str]:

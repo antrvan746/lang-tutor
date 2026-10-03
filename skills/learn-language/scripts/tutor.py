@@ -215,7 +215,10 @@ class Workspace:
         active = [b for b in books if b.get("status") == "active"]
         if not active:
             raise TutorError("No active book. Add one with `tutor.py book add FILE`.")
-        return max(active, key=lambda b: b.get("touched", b.get("created", "")))
+        if len(active) > 1:
+            raise TutorError("Several active books — pass --slug (one of: "
+                             + ", ".join(b["slug"] for b in active) + ").")
+        return active[0]
 
     def save_book(self, book: dict) -> None:
         write_json(self.books_dir / book["slug"] / "index.json", book)
@@ -595,11 +598,7 @@ def cmd_next(args) -> None:
         plan["mode"] = "review"
         plan["why"] = f"{len(due)} items due — review before new material."
     else:
-        book = None
-        try:
-            book = ws.book(None)
-        except TutorError:
-            pass
+        book = next_book(ws, history)
         unit = next((u for u in book["units"] if u["kind"] == "lesson" and u["status"] != "done"), None) if book else None
         if unit:
             lines = (ws.books_dir / book["slug"] / "book.md").read_text(encoding="utf-8").split("\n")
@@ -620,6 +619,25 @@ def cmd_next(args) -> None:
         if reviews:
             plan["mode"] += "+review"
     emit(plan)
+
+
+def next_book(ws: Workspace, history: list[dict]) -> dict | None:
+    """Active books with lessons left take turns: the one studied least recently goes next."""
+    def last_studied(book: dict) -> int:
+        return max((n for n, h in enumerate(history) if h.get("book") == book["slug"]), default=-1)
+
+    candidates = [b for b in ws.books() if b.get("status") == "active"
+                  and any(u["kind"] == "lesson" and u["status"] != "done" for u in b["units"])]
+    if not candidates:
+        return None
+    return min(candidates, key=lambda b: (last_studied(b), b.get("created", "")))
+
+
+def rotation_book(ws: Workspace, slug: str | None) -> dict:
+    """The named book, or the one whose turn it is."""
+    if slug:
+        return ws.book(slug)
+    return next_book(ws, ws.history()) or ws.book(None)
 
 
 def cmd_due(args) -> None:
@@ -754,7 +772,7 @@ def cmd_book(args) -> None:
         book = ws.book(args.slug)
         emit([{k: u[k] for k in ("id", "title", "kind", "status", "exercises", "start", "end")} for u in book["units"]])
     elif args.action == "show":
-        book = ws.book(args.slug)
+        book = rotation_book(ws, args.slug)
         lines = (ws.books_dir / book["slug"] / "book.md").read_text(encoding="utf-8").split("\n")
         unit = next((u for u in book["units"] if u["id"] == args.unit), None) if args.unit else \
             next((u for u in book["units"] if u["kind"] == "lesson" and u["status"] != "done"), None)
@@ -767,7 +785,7 @@ def cmd_book(args) -> None:
         if stop < unit["end"]:
             print(f"<!-- truncated: continue with --offset {args.offset + args.limit} -->")
     elif args.action == "next":
-        book = ws.book(args.slug)
+        book = rotation_book(ws, args.slug)
         unit = next((u for u in book["units"] if u["kind"] == "lesson" and u["status"] != "done"), None)
         lines = (ws.books_dir / book["slug"] / "book.md").read_text(encoding="utf-8").split("\n")
         emit({"book": book["slug"], "title": book["title"], "path": str(ws.books_dir / book["slug"] / "book.md"),

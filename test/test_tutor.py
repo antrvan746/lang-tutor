@@ -291,6 +291,17 @@ class BookTests(TutorTestCase):
         self.assertEqual(self.cli("book", "next")["unit"]["title"], "Unit 2 Present simple")
         self.assertIn("1/3", (self.home / "english" / "progress.md").read_text())
 
+    def test_active_books_take_turns(self):
+        self.init_english()
+        self.cli("book", "add", str(self.write("a.md", BOOK_MD)), "--slug", "grammar")
+        self.cli("book", "add", str(self.write("b.md", BOOK_MD)), "--slug", "vocab", "--keep-active")
+        seen = []
+        for _ in range(4):
+            new = self.cli("next")["new"]
+            seen.append(new["book"])
+            self.cli("session", "--kind", "book", "--book", new["book"], "--unit", new["unit"]["id"], "--exercise", "1", "--score", "1/1")
+        self.assertEqual(seen, ["grammar", "vocab", "grammar", "vocab"])
+
     def test_paused_book_returns_to_curriculum(self):
         self.init_english()
         self.cli("book", "add", str(self.write("egu.md", BOOK_MD)))
@@ -404,7 +415,7 @@ class ConvertTests(unittest.TestCase):
     def test_bold_unit_lines_split_when_no_headings(self):
         md = "\n".join(["intro"] + [f"**Unit {n}**\nbody {n}\n" for n in range(1, 5)])
         units, strategy = convert.index_units(md)
-        self.assertEqual(strategy, "unit-name lines")
+        self.assertIn("unit", strategy)
         self.assertEqual([u["title"] for u in units if u["kind"] == "lesson"], [f"Unit {n}" for n in range(1, 5)])
 
     def test_image_only_epub_suggests_ocr(self):
@@ -418,6 +429,31 @@ class ConvertTests(unittest.TestCase):
             z.writestr("p1.xhtml", '<html><body><svg><image href="p1.jpg"/></svg></body></html>')
         with self.assertRaisesRegex(convert.ConversionError, "ocrmypdf"):
             convert.to_markdown(path)
+
+    def test_two_page_spread_running_headers(self):
+        # English Grammar in Use shape: "Unit N" repeats on both pages of each unit,
+        # titles live in the contents or the next heading, exercises are numbered N.M.
+        toc = "Contents\n1 Present continuous 2 Present simple 3 Past simple"
+        body = []
+        for n, title in [(1, "Present continuous"), (2, None), (3, None)]:
+            body += [f"Unit **{n}**" + (f" {title}" if title else ""), "explanation"]
+            if n == 2:
+                body += ["### Present simple ( **I do** )"]
+            body += ["<!-- page -->", f"Unit **{n}**", "**Exercises**",
+                     f"{n}.1  What's happening? Choose.", "a", f"###### **{n}.2 Write questions.**", "b"]
+        body += ["Appendix 1 Irregular verbs", "x", "**Appendix 1**", "y", "### Key to Exercises", "1.1 taking",
+                 "**Key to Exercises**", "Index", "z"]
+        units, strategy = convert.index_units(toc + "\n" + "\n".join(body))
+        self.assertTrue(strategy.startswith("numbered unit names"))
+        self.assertEqual([(u["title"], u["kind"], u["exercises"]) for u in units], [
+            ("Front matter", "front", 0),
+            ("Unit 1 Present continuous", "lesson", 2),
+            ("Unit 2 Present simple", "lesson", 2),
+            ("Unit 3 Past simple", "lesson", 2),
+            ("Appendix 1 Irregular verbs", "front", 0),
+            ("Key to Exercises", "answers", 0),
+            ("Index", "front", 0),
+        ])
 
     def test_fixed_chunks_when_no_structure(self):
         units, strategy = convert.index_units("\n".join(f"line {i}" for i in range(450)))
